@@ -1,0 +1,22 @@
+[
+    {
+        "merged": "/Users/daria/AndroidStudioProjects/Tey/app/build/intermediates/incremental/mergeDebugResources/stripped.dir/layout/content_game.xml",
+        "source": "/Users/daria/AndroidStudioProjects/Tey/app/src/main/res/layout/content_game.xml"
+    },
+    {
+        "merged": "/Users/daria/AndroidStudioProjects/Tey/app/build/intermediates/incremental/mergeDebugResources/stripped.dir/layout/fragment_second.xml",
+        "source": "/Users/daria/AndroidStudioProjects/Tey/app/src/main/res/layout/fragment_second.xml"
+    },
+    {
+        "merged": "/Users/daria/AndroidStudioProjects/Tey/app/build/intermediates/incremental/mergeDebugResources/stripped.dir/layout/activity_main.xml",
+        "source": "/Users/daria/AndroidStudioProjects/Tey/app/src/main/res/layout/activity_main.xml"
+    },
+    {
+        "merged": "/Users/daria/AndroidStudioProjects/Tey/app/build/intermediates/incremental/mergeDebugResources/stripped.dir/layout/fragment_first.xml",
+        "source": "/Users/daria/AndroidStudioProjects/Tey/app/src/main/res/layout/fragment_first.xml"
+    },
+    {
+        "merged": "/Users/daria/AndroidStudioProjects/Tey/app/build/intermediates/incremental/mergeDebugResources/stripped.dir/layout/activity_game.xml",
+        "source": "/Users/daria/AndroidStudioProjects/Tey/app/src/main/res/layout/activity_game.xml"
+    }
+]
