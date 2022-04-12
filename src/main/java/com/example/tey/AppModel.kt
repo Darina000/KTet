@@ -2,8 +2,10 @@ package com.example.tey
 
 import constants.CellConstants
 import models.Block
+import kotlin.concurrent.fixedRateTimer
 
-package models
+//package models
+
 
 import android.graphics.Point
 import constants.FieldConstants
@@ -55,17 +57,9 @@ class AppModel {
         LEFT, RIGHT, DOWN, ROTATE
     }
 
-    fun setPreferences(preferences: AppPreferences?){
-        this.preferences = preferences
-    }
-    fun getCellStatus(row: Int, column: Int): Byte?{
-        return field[row][column]
-    }
-    private fun setCellStatus(row: Int, column: Int, status: Byte?){
-        if (status != null){
-            field[row][column] = status
-        }
-    }
+
+
+
 
     private fun boostScore(){
         score +=10
@@ -73,9 +67,9 @@ class AppModel {
         preferences?.saveHighScore(score)
     }
 
-    private fun generateNextBlock(){
-        currentBlock = Block.createBlock()
-    }
+
+
+
 
     private fun validTranslation(position: Point, shape: Array<ByteArray>):
     Boolean{
@@ -104,4 +98,162 @@ class AppModel {
         val shape: Array<ByteArray>? = currentBlock?.getShape(frameNumber as Int)
         return validTranslation(position, shape as Array<ByteArray>)
     }
+
+    private fun resetField(ephemeralCellOnly: Boolean = true){
+        for (i in 0 until FieldConstants.ROW_COUNT.value){
+            (0 until FieldConstants.COLUMN_COUNT.value)
+                .filter { !ephemeralCellOnly|| field[i][it] == CellConstants.EPHEMERAL.value }
+                .forEach{ field[i][it] = CellConstants.EMPTY.value}
+        }
+    }
+
+    private fun persistCellData(){
+        for (i in 0 until field.size){
+            for (j in 0 until field[i].size){
+                var status = getCellStatus(i, j)
+                if (status == currentBlock?.staticValue){
+                    status = currentBlock?.staticValue
+                    setCellStatus(i, j, status)
+                }
+            }
+        }
+    }
+
+
+
+    private fun translateBlock(position: Point, frameNumber: Int){
+        synchronized(field){
+            val shape: Array<ByteArray>? = currentBlock?.getShape(frameNumber)
+            if (shape != null){
+                for (i in shape.indices){
+                    for (j in 0 until shape[i].size){
+                        val y = position.y + i
+                        val x = position.x + j
+                        if (CellConstants.EMPTY.value != shape[i][j]){
+                            field[y][x] = shape[i][j]
+                        }
+
+                    }
+                }
+            }
+        }
+    }
+
+
+        private fun shiftRows(nToRow: Int){
+            if (nToRow > 0){
+                for (j in nToRow -1 downTo 0){
+                    for (m in 0 until field[j].size){
+                        setCellStatus(j+1, m, getCellStatus(j, m))
+                    }
+                }
+            }
+            for (j in 0 until field[0].size){
+                setCellStatus(0, j, CellConstants.EMPTY.value)
+            }
+        }
+        fun startGame(){
+            if(!isGameActive()){
+                currentState = Statuses.ACTIVE.name
+                generateNextBlock()
+            }
+        }
+        fun restartGame(){
+            resetMode()
+            startGame()
+        }
+        fun endGame(){
+            score = 0
+            currentState = AppModel.Statuses.OVER.name
+        }
+    private fun resetMode(){
+        resetField(false)
+        currentState = Statuses.AWAITING_START.name
+        score = 0
+    }
+
+    private fun blockAdditionPossible(): Boolean{
+        if (!moveValid(currentBlock?.position as Point,
+            currentBlock?.frameNumber)){
+            return false
+        }
+        return true
+    }
+
+
+    private fun generateNextBlock(){
+        currentBlock = Block.createBlock()
+    }
+
+
+
+    private fun assessField(){
+        for (i in 0 until field.size){
+            var emptyCells = 0;
+            for (j in 0 until field[i].size){
+                val status = getCellStatus(i, j)
+                val isEmpty = CellConstants.EMPTY.value == status
+                if (isEmpty){
+                    emptyCells++
+                }
+                if (emptyCells == 0){
+                    shiftRows(i)
+                }
+
+            }
+        }
+    }
+
+
+
+
+
+
+    fun generateField(action: String){
+        resetField()
+        var frameNumber: Int? = currentBlock?.frameNumber
+        var coordinate: Point? = Point()
+        coordinate?.x = currentBlock?.position?.x
+        coordinate?.y = currentBlock?.position?.y
+
+        when (action){
+            Motions.LEFT.name ->{
+                coordinate?.x = currentBlock?.position?.x?.minus(1)
+            }
+            Motions.RIGHT.name ->{
+                coordinate?.x = currentBlock?.position?.x?.plus(1)
+            }
+            Motions.DOWN.name ->{
+                coordinate?.y = currentBlock?.position?.y?.plus(1)
+            }
+            Motions.ROTATE.name ->{
+                frameNumber = frameNumber?.plus(1)
+                if (frameNumber != null){
+                    if (frameNumber >= currentBlock?.frameCount as Int){
+                        frameNumber = 0
+                    }
+                }
+            }
+        }
+        if (!moveValid(coordinate as Point, frameNumber)){
+            translateBlock(currentBlock?.position as Point, currentBlock?.frameNumber as Int)
+            if (Motions.DOWN.name == action){
+                boostScore()
+                persistCellData()
+                assessField()
+                generateNextBlock()
+                if (!blockAdditionPossible() ){
+                    currentState = Statuses.OVER.name;
+                    currentBlock = null;
+                    resetField(false);
+                }
+            }
+        }else {
+            if (frameNumber != null) {
+                translateBlock(coordinate, frameNumber)
+                currentBlock?.setState(frameNumber, coordinate)
+            }
+        }
+    }
+
 }
